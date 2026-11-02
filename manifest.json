@@ -1,0 +1,9 @@
+{
+    "driverId": "mickyngub.peek-notes",
+    "driverName": "Peek Notes",
+    "driverVersion": "1.0.0",
+    "description": "Keep the board tidy, keep the details. Select any box and write the long version and its sources in the panel, and a bookmark appears on its corner. Click the bookmark or the box to open the note beside it, and close it to get your clean board back. Notes are saved with the board, so teammates with Peek Notes see them too. Made for workflows, research maps, lesson plans and study boards.",
+    "icon": "icon.png",
+    "main": "main.js",
+    "permissions": ["dom", "scene"]
+}
