@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Republished build, no changes since 1.0.1
+
 ## 1.0.1
 
 - The bookmark on boxes, in the note and in the panel is now a plain ribbon, without the eyes
