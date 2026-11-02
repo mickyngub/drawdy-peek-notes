@@ -30,12 +30,12 @@ export type Ctx = {
 // the card stay the same size on screen at any zoom.
 const artWidth = (height: number): number =>
     Math.round((height * BOOKMARK_ART.width) / BOOKMARK_ART.height);
-// The lift puts the ribbon's eyes just over the box's top edge, peeking.
+// The lift puts the ribbon's fold on the box's top edge, as if tucked over it.
 export const MARK = {
     width: artWidth(30),
     height: 30,
     inset: 10,
-    lift: 8,
+    lift: 4,
     gap: 4,
 };
 export const CARD = {
