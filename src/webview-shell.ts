@@ -1,9 +1,10 @@
 import { FIELD, PRIMARY, SECONDARY, SECTION_LABEL } from "../webview/classes";
+import { BOOKMARK_ART } from "./bookmark-art";
 import { PANEL_CSS } from "./panel-css";
 
-const MARK_FILLED = `<svg class="hidden h-5 w-3.75 group-data-[has-note=true]:block" viewBox="0 0 18 24" aria-hidden="true"><path d="M3 1.25h12A1.75 1.75 0 0 1 16.75 3v19.1L9 17.4l-7.75 4.7V3A1.75 1.75 0 0 1 3 1.25Z" fill="#ffc21a" stroke="#1b2140" stroke-width="1.5" stroke-linejoin="round"/><path d="M5.5 6.5h7M5.5 10h5" stroke="#1b2140" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+const MARK_FILLED = `<img class="hidden h-6 w-auto group-data-[has-note=true]:block" src="${BOOKMARK_ART.uri}" alt="" />`;
 const MARK_OUTLINE = `<svg class="size-4.5 text-fg-subtle group-data-[has-note=true]:hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 2H19C19.5523 2 20 2.44772 20 3V22.1433C20 22.4194 19.7761 22.6434 19.5 22.6434C19.4061 22.6434 19.314 22.6168 19.2344 22.5669L12 18.0313L4.76559 22.5669C4.53163 22.7136 4.22306 22.6429 4.07637 22.4089C4.02647 22.3293 4 22.2373 4 22.1433V3C4 2.44772 4.44772 2 5 2ZM18 4H6V19.4324L12 15.6707L18 19.4324V4Z"/></svg>`;
-const EMPTY_ART = `<svg class="mb-2 h-10 w-14 text-fg-subtle" viewBox="0 0 56 40" fill="none" aria-hidden="true"><rect x="2" y="7" width="46" height="30" rx="6" stroke="currentColor" stroke-width="1.5"/><path d="M10 17h20M10 23h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".6"/><path d="M35.5 3.5h8a1.25 1.25 0 0 1 1.25 1.25v15.5l-5.25-3.25-5.25 3.25V4.75A1.25 1.25 0 0 1 35.5 3.5Z" fill="#ffc21a" stroke="#1b2140" stroke-width="1.25" stroke-linejoin="round"/></svg>`;
+const EMPTY_ART = `<span class="relative mb-2 block h-11 w-14" aria-hidden="true"><svg class="absolute bottom-0 left-0 h-9 w-12 text-fg-subtle" viewBox="0 0 48 36" fill="none"><rect x="1" y="1" width="46" height="34" rx="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 13h20M8 20h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".6"/></svg><img class="absolute top-0 right-3 h-7 w-auto" src="${BOOKMARK_ART.uri}" alt="" /></span>`;
 
 const BODY = `
 <main class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-3 pb-4 [scrollbar-color:var(--color-line-strong)_transparent] [scrollbar-width:thin]">

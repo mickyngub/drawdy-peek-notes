@@ -9,7 +9,8 @@
     "scripts": {
         "css": "node scripts/build-css.mjs",
         "dev": "node scripts/dev.mjs",
-        "build": "node scripts/build-css.mjs && node build.ts",
+        "art": "node scripts/build-art.mjs",
+        "build": "node scripts/build-art.mjs && node scripts/build-css.mjs && node build.ts",
         "test": "tsx --test test/*.test.ts",
         "typecheck": "tsc --noEmit",
         "preflight": "node scripts/preflight.mjs"

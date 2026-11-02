@@ -5,6 +5,7 @@ import type {
     Target,
     WebviewToDriver,
 } from "../src/shared/messages";
+import { BOOKMARK_ART } from "../src/bookmark-art";
 import { ROW } from "./classes";
 
 type DrawdyWebviewApi = {
@@ -15,7 +16,7 @@ type DrawdyWebviewApi = {
 declare function acquireDrawdyApi(): DrawdyWebviewApi;
 
 const STATUS_MS = 2000;
-const MARK = `<svg class="mt-0.5 h-4 w-3 shrink-0" viewBox="0 0 18 24" aria-hidden="true"><path d="M3 1.25h12A1.75 1.75 0 0 1 16.75 3v19.1L9 17.4l-7.75 4.7V3A1.75 1.75 0 0 1 3 1.25Z" fill="#ffc21a" stroke="#1b2140" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+const MARK = `<img class="mt-0.5 h-4.5 w-auto shrink-0" src="${BOOKMARK_ART.uri}" alt="" />`;
 
 const api = acquireDrawdyApi();
 const byId = <T extends HTMLElement>(id: string) =>

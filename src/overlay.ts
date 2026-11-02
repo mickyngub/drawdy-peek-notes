@@ -4,6 +4,7 @@ import type {
     DriverCommandIssuer,
     ModuleStyling,
 } from "@drawdy/driver-protocol";
+import { BOOKMARK_ART } from "./bookmark-art";
 import { displayLink, isUrl, truncate, wrapText, type Note } from "./note";
 
 export type Rect = { x: number; y: number; width: number; height: number };
@@ -27,7 +28,16 @@ export type Ctx = {
 
 // Sizes are screen pixels; the builders divide by zoom so the bookmark and
 // the card stay the same size on screen at any zoom.
-export const MARK = { width: 20, height: 28, inset: 10, lift: 5, gap: 4 };
+const artWidth = (height: number): number =>
+    Math.round((height * BOOKMARK_ART.width) / BOOKMARK_ART.height);
+// The lift puts the ribbon's eyes just over the box's top edge, peeking.
+export const MARK = {
+    width: artWidth(30),
+    height: 30,
+    inset: 10,
+    lift: 8,
+    gap: 4,
+};
 export const CARD = {
     width: 304,
     pad: 14,
@@ -35,7 +45,7 @@ export const CARD = {
     header: 28,
     button: 28,
     buttonGap: 2,
-    iconWidth: 12,
+    iconWidth: artWidth(16),
     line: 20,
     bodyPx: 13,
     linkPx: 12,
@@ -83,16 +93,6 @@ export function hitOf(ids: readonly string[]): Hit | null {
 
 const svgUri = (svg: string): string =>
     `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-
-const NAVY = "#1b2140";
-const AMBER = "#ffc21a";
-
-// The line across the top sits on the box's edge, where the ribbon folds over.
-export const BOOKMARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 28" width="20" height="28"><defs><filter id="s" x="-40%" y="-20%" width="180%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="0.9" flood-color="#000" flood-opacity="0.35"/></filter></defs><path filter="url(#s)" d="M4 1.25h12A1.75 1.75 0 0 1 17.75 3v22.1L10 20.4l-7.75 4.7V3A1.75 1.75 0 0 1 4 1.25Z" fill="${AMBER}" stroke="${NAVY}" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 5h14" stroke="${NAVY}" stroke-opacity="0.3" stroke-width="1.25"/><path d="M6.5 10.5h7M6.5 14h4.5" stroke="${NAVY}" stroke-width="1.5" stroke-linecap="round"/></svg>`;
-const BOOKMARK_URI = svgUri(BOOKMARK_SVG);
-const SMALL_MARK_URI = svgUri(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 24" width="12" height="16"><path d="M3 1.25h12A1.75 1.75 0 0 1 16.75 3v19.1L9 17.4l-7.75 4.7V3A1.75 1.75 0 0 1 3 1.25Z" fill="${AMBER}" stroke="${NAVY}" stroke-width="1.75" stroke-linejoin="round"/></svg>`
-);
 
 const ICONS = {
     edit: "M6.41421 15.89L16.5563 5.74786L15.1421 4.33365L5 14.4758V15.89H6.41421ZM7.24264 17.89H3V13.6474L14.435 2.21233C14.8256 1.8218 15.4587 1.8218 15.8492 2.21233L18.6777 5.04075C19.0682 5.43128 19.0682 6.06444 18.6777 6.45497L7.24264 17.89ZM3 19.89H21V21.89H3V19.89Z",
@@ -249,7 +249,7 @@ export function buildMarks(state: OverlayState): DrawdyPreviewElementSchema[] {
                         type: "box",
                         styles: { width: [1, "px"], height: [room, "px"] },
                     },
-                    image(BOOKMARK_URI, MARK.width, MARK.height),
+                    image(BOOKMARK_ART.uri, MARK.width, MARK.height),
                 ],
             }
         );
@@ -333,7 +333,7 @@ function cardBody(
                 crossAxisAlignment: "center",
             },
             children: [
-                image(SMALL_MARK_URI, CARD.iconWidth, 16),
+                image(BOOKMARK_ART.uri, CARD.iconWidth, 16),
                 spacer(8),
                 text(layout.title, TITLE_WIDTH, p.muted, 12, 16, "medium"),
                 spacer(6),
