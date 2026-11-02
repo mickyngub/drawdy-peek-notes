@@ -63,9 +63,12 @@ test("the card grows for sources and shortens long links", () => {
     );
     assert.equal(
         sourced.height - plain.height,
-        CARD.gap + CARD.label + CARD.line
+        CARD.gap + CARD.caption + CARD.captionGap + CARD.line
     );
-    assert.ok(sourced.links[0].endsWith("…"));
+    assert.ok(sourced.links[0].text.endsWith("…"));
+    assert.ok(sourced.links[0].text.startsWith("example.com/"));
+    assert.equal(sourced.links[0].url, true);
+    assert.equal(cardLayout("T", note("", ["A book"])).links[0].url, false);
 });
 
 test("the bookmark sits inside the top-right corner and keeps its screen size", () => {
@@ -100,7 +103,11 @@ test("a press means the button under it before the card or a bookmark", () => {
 
 test("the card only shows for the open note and not while it is dragged", () => {
     assert.deepEqual(buildCard(state()), []);
-    assert.equal(buildCard(state({ open: "a" })).length, 1);
+    assert.deepEqual(
+        buildCard(state({ open: "a" })).map((el) => el.drawdyElementId),
+        ["peek-notes:card-shadow", "peek-notes:card", "peek-notes:card-caret"],
+        "the shadow sits under the card and the caret over its edge"
+    );
     assert.deepEqual(
         buildCard(state({ open: "a", dragging: new Set(["a"]) })),
         []

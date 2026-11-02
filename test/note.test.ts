@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
+    displayLink,
     labelOf,
     makeNote,
     MAX_LINKS,
     NOTE_KEY,
     parseLinks,
     readNote,
-    textUnits,
+    textWidth,
     truncate,
     wrapText,
 } from "../src/note";
@@ -72,34 +73,62 @@ test("labelOf names an element by its text, then by what it is", () => {
 });
 
 test("wrapText breaks English at spaces and keeps blank lines between paragraphs", () => {
-    const lines = wrapText("one two three four five six\n\nseven", 10);
+    const max = textWidth("three four");
+    const lines = wrapText("one two three four five six\n\nseven", max);
     assert.deepEqual(lines, ["one two", "three four", "five six", "", "seven"]);
-    assert.deepEqual(wrapText("end\n\n\n", 10), ["end"]);
+    assert.deepEqual(wrapText("end\n\n\n", max), ["end"]);
+});
+
+test("wrapText fills a line by glyph width, not character count", () => {
+    const max = textWidth("m".repeat(10));
+    assert.deepEqual(wrapText("iiiiiiiiiiiiiiiiiiii mmmmm", max), [
+        "iiiiiiiiiiiiiiiiiiii",
+        "mmmmm",
+    ]);
+    assert.ok(textWidth("Wide", 13) > textWidth("Wide", 12));
 });
 
 test("wrapText breaks Thai at word boundaries without losing text", () => {
     const thai =
         "เวลาผมทำworkflowในกล่องก็จะเขียนข้อความหรือใจความหลักส่วนรายละเอียดเนื้อหาเยอะๆจะแอบไว้";
-    const lines = wrapText(thai, 12);
+    const lines = wrapText(thai, 100, 13);
     assert.ok(lines.length > 1);
-    for (const line of lines) assert.ok(textUnits(line) <= 12, line);
+    for (const line of lines) assert.ok(textWidth(line, 13) <= 100, line);
     assert.equal(lines.join(""), thai);
     assert.ok(
-        lines.every((line) => !/^[ัิ-ฺ็-๎]/u.test(line)),
+        lines.every(
+            (line) => !/^[\u0e31\u0e34-\u0e3a\u0e47-\u0e4e]/u.test(line)
+        ),
         "a line starts with a combining mark"
     );
 });
 
 test("wrapText hard-breaks a word longer than a line", () => {
     const url = "https://example.com/a/very/long/path/without/spaces";
-    const lines = wrapText(url, 16);
+    const lines = wrapText(url, 90);
     assert.equal(lines.join(""), url);
-    for (const line of lines) assert.ok(textUnits(line) <= 16);
+    for (const line of lines) assert.ok(textWidth(line) <= 90);
 });
 
-test("truncate counts wide characters twice and adds an ellipsis", () => {
-    assert.equal(truncate("short", 10), "short");
-    assert.equal(truncate("a longer title here", 10), "a longer…");
-    assert.equal(textUnits("日本"), 4);
-    assert.ok(textUnits(truncate("日本語のテキスト", 7)) <= 7);
+test("truncate keeps what fits, counts wide characters wider and adds an ellipsis", () => {
+    assert.equal(truncate("short", 100), "short");
+    const cut = truncate("a longer title here", textWidth("a longer t"));
+    assert.ok(
+        cut.endsWith("…") && textWidth(cut) <= textWidth("a longer t"),
+        cut
+    );
+    assert.ok(textWidth("日本") > textWidth("ab"));
+    assert.ok(textWidth(truncate("日本語のテキスト", 40)) <= 40);
+});
+
+test("displayLink drops the scheme, www and trailing slash from URLs only", () => {
+    assert.equal(
+        displayLink("https://www.nngroup.com/articles/"),
+        "nngroup.com/articles"
+    );
+    assert.equal(displayLink("http://a.dev"), "a.dev");
+    assert.equal(
+        displayLink("The Mom Test, Rob Fitzpatrick"),
+        "The Mom Test, Rob Fitzpatrick"
+    );
 });

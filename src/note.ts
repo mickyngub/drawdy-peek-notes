@@ -80,46 +80,77 @@ export function firstLineOf(note: Note): string {
     return firstLine(note.body) || note.links[0] || "";
 }
 
+export const isUrl = (link: string): boolean => /^https?:\/\/\S+$/i.test(link);
+
+/** A link as people read it: no scheme, no www, no trailing slash. */
+export function displayLink(link: string): string {
+    if (!isUrl(link)) return link;
+    return link.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "");
+}
+
 const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 const words = new Intl.Segmenter(undefined, { granularity: "word" });
-const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]|\p{Extended_Pictographic}/u;
 
-const unitsOf = (grapheme: string): number => (WIDE.test(grapheme) ? 2 : 1);
+// Google Sans Flex advance widths at 12 px for U+0020 to U+007E, measured in
+// Drawdy's page and rounded up, so text laid out with them never re-wraps.
+const ASCII_12 = [
+    2.7, 4, 3.9, 7.7, 7.3, 10, 7.6, 2.2, 4, 4, 5.2, 6.7, 2.9, 4.1, 2.9, 3.6,
+    7.8, 4.5, 6.4, 6.5, 7.2, 6.8, 6.7, 6, 6.7, 6.7, 2.9, 2.9, 6.7, 6.7, 6.7,
+    5.8, 10.7, 8.1, 7.3, 8.9, 8.5, 6.7, 6.4, 9.5, 8.4, 3, 6.4, 7.6, 6.2, 10.4,
+    8.5, 9.9, 7, 9.9, 7.1, 6.7, 6.5, 7.9, 7.6, 11.4, 7.7, 7.2, 6.9, 4.6, 3.6,
+    4.6, 5.6, 6.8, 5.4, 6.5, 7.3, 6.6, 7.3, 6.8, 4.6, 7.2, 6.8, 2.8, 2.8, 6.1,
+    2.6, 10.5, 6.8, 7.2, 7.3, 7.3, 4.5, 5.7, 4.4, 6.8, 6.2, 9.4, 5.9, 6.2, 5.8,
+    4.8, 2.9, 4.8, 6.7,
+];
+const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]|\p{Extended_Pictographic}/u;
+// Thai falls back to the system's Thai face: about 7.1 px a cluster on
+// average at 12 px, held higher for the wide letters.
+const THAI = /[฀-๿]/;
 
-export function textUnits(text: string): number {
-    let units = 0;
+function graphemeWidth(grapheme: string): number {
+    const code = grapheme.codePointAt(0) ?? 0;
+    if (grapheme.length === 1 && code >= 32 && code < 127)
+        return ASCII_12[code - 32];
+    if (WIDE.test(grapheme)) return 12.6;
+    if (THAI.test(grapheme)) return 7.5;
+    return 7.6;
+}
+
+export function textWidth(text: string, fontPx = 12): number {
+    let width = 0;
     for (const { segment } of graphemes.segment(text))
-        units += unitsOf(segment);
-    return units;
+        width += graphemeWidth(segment);
+    return (width * fontPx) / 12;
 }
 
 /** Cuts at the last whole grapheme that fits, adding an ellipsis when it cuts. */
-export function truncate(text: string, maxUnits: number): string {
-    if (textUnits(text) <= maxUnits) return text;
+export function truncate(text: string, maxPx: number, fontPx = 12): string {
+    if (textWidth(text, fontPx) <= maxPx) return text;
+    const budget = maxPx - textWidth("…", fontPx);
     let out = "";
-    let units = 0;
+    let width = 0;
     for (const { segment } of graphemes.segment(text)) {
-        const next = units + unitsOf(segment);
-        if (next > maxUnits - 1) break;
+        const next = width + textWidth(segment, fontPx);
+        if (next > budget) break;
         out += segment;
-        units = next;
+        width = next;
     }
     return `${out.trimEnd()}…`;
 }
 
-function hardBreak(word: string, maxUnits: number): string[] {
+function hardBreak(word: string, maxPx: number, fontPx: number): string[] {
     const lines: string[] = [];
     let line = "";
-    let units = 0;
+    let width = 0;
     for (const { segment } of graphemes.segment(word)) {
-        const width = unitsOf(segment);
-        if (units + width > maxUnits && line) {
+        const w = textWidth(segment, fontPx);
+        if (width + w > maxPx && line) {
             lines.push(line);
             line = "";
-            units = 0;
+            width = 0;
         }
         line += segment;
-        units += width;
+        width += w;
     }
     if (line) lines.push(line);
     return lines;
@@ -129,37 +160,41 @@ function hardBreak(word: string, maxUnits: number): string[] {
  * Word-wraps one paragraph. Words come from Intl.Segmenter, which also splits
  * Thai and other scripts written without spaces.
  */
-export function wrapParagraph(text: string, maxUnits: number): string[] {
+export function wrapParagraph(
+    text: string,
+    maxPx: number,
+    fontPx = 12
+): string[] {
     const lines: string[] = [];
     let line = "";
-    let units = 0;
+    let width = 0;
     for (const { segment } of words.segment(text)) {
-        const width = textUnits(segment);
-        if (units + width <= maxUnits) {
+        const w = textWidth(segment, fontPx);
+        if (width + w <= maxPx + 0.01) {
             line += segment;
-            units += width;
+            width += w;
             continue;
         }
         if (line.trim()) lines.push(line.trimEnd());
         const piece = segment.trimStart();
-        if (textUnits(piece) <= maxUnits) {
+        if (textWidth(piece, fontPx) <= maxPx) {
             line = piece;
-            units = textUnits(piece);
+            width = textWidth(piece, fontPx);
             continue;
         }
-        const broken = hardBreak(piece, maxUnits);
+        const broken = hardBreak(piece, maxPx, fontPx);
         line = broken.pop() ?? "";
-        units = textUnits(line);
+        width = textWidth(line, fontPx);
         lines.push(...broken);
     }
     if (line.trim() || lines.length === 0) lines.push(line.trimEnd());
     return lines;
 }
 
-export function wrapText(text: string, maxUnits: number): string[] {
+export function wrapText(text: string, maxPx: number, fontPx = 12): string[] {
     const lines = text
         .split(/\r?\n/)
-        .flatMap((paragraph) => wrapParagraph(paragraph, maxUnits));
+        .flatMap((paragraph) => wrapParagraph(paragraph, maxPx, fontPx));
     while (lines.length > 0 && !lines[lines.length - 1]) lines.pop();
     return lines;
 }

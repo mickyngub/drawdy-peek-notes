@@ -23,6 +23,7 @@ const byId = <T extends HTMLElement>(id: string) =>
 
 const stylingEl = byId<HTMLStyleElement>("drawdy-styling");
 const editorEl = byId<HTMLElement>("editor");
+const targetEl = byId<HTMLDivElement>("target");
 const targetLabelEl = byId<HTMLSpanElement>("target-label");
 const bodyEl = byId<HTMLTextAreaElement>("body");
 const linksEl = byId<HTMLTextAreaElement>("links");
@@ -36,12 +37,14 @@ const footerEl = byId<HTMLElement>("footer");
 const statusEl = byId<HTMLParagraphElement>("status");
 const removeEl = byId<HTMLButtonElement>("remove");
 const saveEl = byId<HTMLButtonElement>("save");
+const saveKeysEl = byId<HTMLElement>("save-keys");
 
 let state: PanelState = { selected: 0, target: null, notes: [] };
 let editing: string | null = null;
 let baseline = { body: "", links: "" };
 let pending: { id: string; body: string; links: string } | null = null;
 let statusTimer: ReturnType<typeof setTimeout> | null = null;
+let transient = "";
 
 const send = (message: WebviewToDriver): void => api.postMessage(message);
 
@@ -49,13 +52,19 @@ const isDirty = (): boolean =>
     editing !== null &&
     (bodyEl.value !== baseline.body || linksEl.value !== baseline.links);
 
+function renderStatus(): void {
+    statusEl.textContent = transient || (isDirty() ? "Unsaved changes" : "");
+}
+
 function setStatus(text: string, sticky = false): void {
     if (statusTimer) clearTimeout(statusTimer);
-    statusEl.textContent = text;
+    transient = text;
+    renderStatus();
     statusTimer = sticky
         ? null
         : setTimeout(() => {
-              statusEl.textContent = "";
+              transient = "";
+              renderStatus();
           }, STATUS_MS);
 }
 
@@ -84,6 +93,7 @@ function save(): void {
 function syncButtons(): void {
     saveEl.disabled = !isDirty();
     removeEl.disabled = !state.target?.note;
+    renderStatus();
 }
 
 function renderList(rows: NoteRow[]): void {
@@ -134,7 +144,8 @@ function render(): void {
         emptyHintEl.textContent =
             "Its bookmark opens the note right on the board.";
     }
-    targetLabelEl.textContent = target?.label ?? "";
+    targetEl.dataset.hasNote = String(Boolean(target?.note));
+    targetLabelEl.textContent = target?.label || "Selected box";
     targetLabelEl.title = target?.label ?? "";
     renderList(state.notes);
     syncButtons();
@@ -200,6 +211,10 @@ removeEl.addEventListener("click", () => {
     send({ type: "remove", id: editing });
     setStatus("Removing…", true);
 });
+
+const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+saveKeysEl.textContent = mac ? "⌘↵" : "Ctrl ↵";
+saveEl.title = mac ? "Save (⌘ Enter)" : "Save (Ctrl Enter)";
 
 render();
 send({ type: "ready" });
